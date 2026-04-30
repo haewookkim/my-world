@@ -51,7 +51,7 @@ export function GradeSelector({
   return (
     <Card>
       <CardContent className="pt-5 flex flex-col gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-2">
           <div className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm font-medium">
             <span>📚</span>
             <span>학년</span>
@@ -63,6 +63,7 @@ export function GradeSelector({
             aria-label="학년"
             spacing={2}
             variant="outline"
+            className="flex-wrap w-full"
           >
             {GRADES.map((g) => (
               <ToggleGroupItem
@@ -77,7 +78,7 @@ export function GradeSelector({
           </ToggleGroup>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-2">
           <div className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm font-medium">
             <span>⚡</span>
             <span>난이도</span>
@@ -89,6 +90,7 @@ export function GradeSelector({
             aria-label="난이도"
             spacing={2}
             variant="outline"
+            className="flex-wrap"
           >
             {DIFFICULTY_OPTIONS.map(({ value, emoji, className }) => (
               <ToggleGroupItem
