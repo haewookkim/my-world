@@ -3,12 +3,16 @@ import { quizStore } from '@/lib/quiz-store'
 import type { SubmitResult } from '@/types/quiz'
 
 function normalize(s: string): string {
-  return s.toLowerCase().trim()
+  return s.toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { quizId, answers } = await req.json()
+
+    if (typeof quizId !== 'string' || !Array.isArray(answers)) {
+      return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 })
+    }
 
     const entry = quizStore.get(quizId)
     if (!entry) {
@@ -34,7 +38,8 @@ export async function POST(req: NextRequest) {
     const totalPoints = results.reduce((sum, r) => sum + r.points, 0)
 
     return NextResponse.json({ results, totalEarned, totalPoints })
-  } catch {
+  } catch (err) {
+    console.error('[quiz/submit] error:', err)
     return NextResponse.json({ error: '채점에 실패했습니다.' }, { status: 500 })
   }
 }

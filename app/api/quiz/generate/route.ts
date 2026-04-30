@@ -7,6 +7,9 @@ const client = new Anthropic()
 
 type LLMProblem = Problem & { answer: string; explanation: string }
 
+const VALID_GRADES: Grade[] = ['중1', '중2', '중3', '고1', '고2', '고3']
+const VALID_DIFFICULTIES: Difficulty[] = ['상', '중', '하']
+
 const SYSTEM_PROMPT = `당신은 한국 교육과정 전문가입니다. 주어진 학년과 난이도에 맞는 문제를 출제합니다.
 반드시 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
 [
@@ -31,6 +34,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '학년과 난이도는 필수입니다.' }, { status: 400 })
     }
 
+    if (!VALID_GRADES.includes(grade) || !VALID_DIFFICULTIES.includes(difficulty)) {
+      return NextResponse.json({ error: '유효하지 않은 학년 또는 난이도입니다.' }, { status: 400 })
+    }
+
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
@@ -48,7 +55,16 @@ export async function POST(req: NextRequest) {
       throw new Error('Unexpected LLM response type')
     }
 
-    const llmProblems: LLMProblem[] = JSON.parse(content.text)
+    const parsed = JSON.parse(content.text)
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error('LLM response is not a non-empty array')
+    }
+    for (const p of parsed) {
+      if (typeof p.answer !== 'string' || typeof p.explanation !== 'string') {
+        throw new Error('LLM response missing answer or explanation field')
+      }
+    }
+    const llmProblems: LLMProblem[] = parsed
 
     const problems: Problem[] = llmProblems.map(
       ({ answer: _a, explanation: _e, ...rest }) => rest,
@@ -68,7 +84,8 @@ export async function POST(req: NextRequest) {
     quizStore.set(quizId, entry)
 
     return NextResponse.json({ quizId, problems })
-  } catch {
+  } catch (err) {
+    console.error('[quiz/generate] error:', err)
     return NextResponse.json({ error: '문제 생성에 실패했습니다.' }, { status: 500 })
   }
 }

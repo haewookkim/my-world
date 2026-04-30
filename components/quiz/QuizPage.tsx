@@ -52,6 +52,7 @@ export function QuizPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quizId, answers }),
       })
+      if (!res.ok) throw new Error('submit failed')
       const data = await res.json()
       setResults(data.results)
       setTotalEarned(data.totalEarned)
@@ -71,7 +72,6 @@ export function QuizPage() {
   }
 
   function handleRetry() {
-    setPhase('select')
     generateQuiz(grade, difficulty)
   }
 
@@ -98,8 +98,8 @@ export function QuizPage() {
         <GradeSelector
           onSubmit={handleSelect}
           loading={loading}
-          initialGrade={grade as Grade}
-          initialDifficulty={difficulty as Difficulty}
+          initialGrade={grade}
+          initialDifficulty={difficulty}
         />
         {phase === 'error' && (
           <div className="flex flex-col gap-3">

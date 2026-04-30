@@ -97,4 +97,21 @@ describe('POST /api/quiz/submit', () => {
       expect(r.isCorrect).toBe(true)
     }
   })
+
+  it('정규화 후 비교: 내부 공백 정규화', async () => {
+    mockGet.mockReturnValue(makeEntry(['대한  민국', '42', 'C']))
+    const res = await POST(makeRequest({ quizId: 'q1', answers: ['대한 민국', '42', 'C'] }))
+    const { results } = await res.json()
+    expect(results[0].isCorrect).toBe(true)
+  })
+
+  it('quizId가 문자열이 아닌 경우 → 400', async () => {
+    const res = await POST(makeRequest({ quizId: 123, answers: [] }))
+    expect(res.status).toBe(400)
+  })
+
+  it('answers가 배열이 아닌 경우 → 400', async () => {
+    const res = await POST(makeRequest({ quizId: 'q1', answers: 'bad' }))
+    expect(res.status).toBe(400)
+  })
 })

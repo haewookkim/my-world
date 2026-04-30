@@ -92,4 +92,22 @@ describe('POST /api/quiz/generate', () => {
     const body = await res.json()
     expect(body.error).toBeDefined()
   })
+
+  it('유효하지 않은 grade → 400 반환', async () => {
+    const res = await POST(makeRequest({ grade: '대학원', difficulty: '중' }))
+    expect(res.status).toBe(400)
+  })
+
+  it('유효하지 않은 difficulty → 400 반환', async () => {
+    const res = await POST(makeRequest({ grade: '중2', difficulty: '최고' }))
+    expect(res.status).toBe(400)
+  })
+
+  it('LLM이 배열이 아닌 응답 반환 시 500', async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: 'text', text: '{"error": "bad"}' }],
+    })
+    const res = await POST(makeRequest({ grade: '중2', difficulty: '중' }))
+    expect(res.status).toBe(500)
+  })
 })
