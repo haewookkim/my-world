@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { GradeSelector } from './GradeSelector'
 import { ProblemCard } from './ProblemCard'
 import { ResultCard } from './ResultCard'
@@ -163,7 +164,7 @@ export function QuizPage() {
         </div>
         <div className="flex gap-3">
           <Button onClick={submitAnswers} disabled={loading}>
-            제출
+            {loading ? <><Loader2 className="animate-spin" />채점 중…</> : '제출'}
           </Button>
           <Button variant="outline" onClick={handleReset} disabled={loading}>
             처음으로
@@ -186,7 +187,7 @@ export function QuizPage() {
       </div>
       <div className="flex gap-3">
         <Button onClick={handleNewQuiz} disabled={loading}>
-          새 문제로 다시 풀기
+          {loading ? <><Loader2 className="animate-spin" />문제 출제 중…</> : '새 문제로 다시 풀기'}
         </Button>
         <Button variant="outline" onClick={handleReset} disabled={loading}>
           처음으로
