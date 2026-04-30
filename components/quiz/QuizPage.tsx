@@ -109,7 +109,13 @@ export function QuizPage() {
   if (phase === 'select' || phase === 'error') {
     return (
       <div className="max-w-2xl mx-auto p-6 flex flex-col gap-6">
-        <h1 className="text-2xl font-bold">학년·난이도별 문제 출제</h1>
+        <div className="rounded-2xl bg-gradient-to-r from-rose-500 to-orange-400 px-8 py-6 flex items-center gap-5 shadow-md">
+          <span className="text-5xl leading-none select-none">🎯</span>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-bold text-white tracking-tight">모두의 퀴즈</h1>
+            <p className="text-sm text-white/80">학년과 난이도를 선택하고 문제를 풀어보세요</p>
+          </div>
+        </div>
         <ApiKeyInput value={apiKey} onChange={handleApiKeyChange} />
         <GradeSelector
           onSubmit={handleSelect}
