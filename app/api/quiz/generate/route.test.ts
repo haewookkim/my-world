@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { mockCreate } = vi.hoisted(() => ({ mockCreate: vi.fn() }))
+const { mockGenerateContent } = vi.hoisted(() => ({ mockGenerateContent: vi.fn() }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class {
-    messages = { create: mockCreate }
+vi.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: class {
+    getGenerativeModel() {
+      return { generateContent: mockGenerateContent }
+    }
   },
 }))
 
@@ -31,28 +33,37 @@ const makeRequest = (body: unknown) =>
     body: JSON.stringify(body),
   })
 
+const validBody = { grade: '중2', difficulty: '중', apiKey: 'test-key' }
+
 describe('POST /api/quiz/generate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCreate.mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify(makeLLMProblems()) }],
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => JSON.stringify(makeLLMProblems()) },
     })
   })
 
   it('grade 누락 시 400 반환', async () => {
-    const res = await POST(makeRequest({ difficulty: '중' }))
+    const res = await POST(makeRequest({ difficulty: '중', apiKey: 'k' }))
     expect(res.status).toBe(400)
     const body = await res.json()
     expect(body.error).toBeDefined()
   })
 
   it('difficulty 누락 시 400 반환', async () => {
-    const res = await POST(makeRequest({ grade: '중2' }))
+    const res = await POST(makeRequest({ grade: '중2', apiKey: 'k' }))
     expect(res.status).toBe(400)
   })
 
-  it('유효한 요청 시 200, quizId + problems 반환', async () => {
+  it('apiKey 누락 시 400 반환', async () => {
     const res = await POST(makeRequest({ grade: '중2', difficulty: '중' }))
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toBeDefined()
+  })
+
+  it('유효한 요청 시 200, quizId + problems 반환', async () => {
+    const res = await POST(makeRequest(validBody))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(typeof body.quizId).toBe('string')
@@ -60,7 +71,7 @@ describe('POST /api/quiz/generate', () => {
   })
 
   it('응답 body에 answer·explanation 필드 없음 (정답 보호)', async () => {
-    const res = await POST(makeRequest({ grade: '중2', difficulty: '중' }))
+    const res = await POST(makeRequest(validBody))
     const { problems } = await res.json()
     for (const p of problems) {
       expect(p).not.toHaveProperty('answer')
@@ -69,7 +80,7 @@ describe('POST /api/quiz/generate', () => {
   })
 
   it('각 problem의 subject가 국어·수학·영어', async () => {
-    const res = await POST(makeRequest({ grade: '중2', difficulty: '중' }))
+    const res = await POST(makeRequest(validBody))
     const { problems } = await res.json()
     const subjects = problems.map((p: { subject: string }) => p.subject)
     expect(subjects).toContain('국어')
@@ -78,36 +89,36 @@ describe('POST /api/quiz/generate', () => {
   })
 
   it('객관식 problem에 choices 배열 포함', async () => {
-    const res = await POST(makeRequest({ grade: '중2', difficulty: '중' }))
+    const res = await POST(makeRequest(validBody))
     const { problems } = await res.json()
     const mcq = problems.find((p: { type: string }) => p.type === '객관식')
     expect(mcq?.choices).toBeDefined()
     expect(Array.isArray(mcq.choices)).toBe(true)
   })
 
-  it('Anthropic API 에러 시 500 반환', async () => {
-    mockCreate.mockRejectedValue(new Error('API error'))
-    const res = await POST(makeRequest({ grade: '중2', difficulty: '중' }))
+  it('Gemini API 에러 시 500 반환', async () => {
+    mockGenerateContent.mockRejectedValue(new Error('API error'))
+    const res = await POST(makeRequest(validBody))
     expect(res.status).toBe(500)
     const body = await res.json()
     expect(body.error).toBeDefined()
   })
 
   it('유효하지 않은 grade → 400 반환', async () => {
-    const res = await POST(makeRequest({ grade: '대학원', difficulty: '중' }))
+    const res = await POST(makeRequest({ ...validBody, grade: '대학원' }))
     expect(res.status).toBe(400)
   })
 
   it('유효하지 않은 difficulty → 400 반환', async () => {
-    const res = await POST(makeRequest({ grade: '중2', difficulty: '최고' }))
+    const res = await POST(makeRequest({ ...validBody, difficulty: '최고' }))
     expect(res.status).toBe(400)
   })
 
   it('LLM이 배열이 아닌 응답 반환 시 500', async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: 'text', text: '{"error": "bad"}' }],
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => '{"error": "bad"}' },
     })
-    const res = await POST(makeRequest({ grade: '중2', difficulty: '중' }))
+    const res = await POST(makeRequest(validBody))
     expect(res.status).toBe(500)
   })
 })

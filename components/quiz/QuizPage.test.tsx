@@ -46,6 +46,8 @@ async function selectAndGenerate(user: ReturnType<typeof userEvent.setup>) {
 describe('QuizPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    localStorage.clear()
+    localStorage.setItem('quiz-api-key', 'test-key')
     mockFetch(
       { quizId: 'q1', problems: mockProblems },
       { results: mockResults, totalEarned: 30, totalPoints: 30 },
@@ -167,5 +169,47 @@ describe('QuizPage', () => {
     await user.click(screen.getByRole('button', { name: '출제' }))
     expect((screen.getByRole('button', { name: '출제' }) as HTMLButtonElement).disabled).toBe(true)
     resolve!(makeJsonResponse({ quizId: 'q1', problems: mockProblems }))
+  })
+
+  // Scenario 0: API 키 입력
+  it('키 미입력 상태에서 출제 버튼 비활성화', async () => {
+    localStorage.clear()
+    const user = userEvent.setup()
+    render(<QuizPage />)
+    await user.click(screen.getByRole('radio', { name: '중2' }))
+    await user.click(screen.getByRole('radio', { name: '중' }))
+    expect((screen.getByRole('button', { name: '출제' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('키 입력 시 localStorage에 저장됨', async () => {
+    localStorage.clear()
+    const user = userEvent.setup()
+    render(<QuizPage />)
+    await user.type(screen.getByLabelText('Gemini API 키'), 'k')
+    expect(localStorage.getItem('quiz-api-key')).toBe('k')
+  })
+
+  it('mount 시 localStorage에서 키 복원', () => {
+    localStorage.setItem('quiz-api-key', 'stored-key')
+    render(<QuizPage />)
+    expect((screen.getByLabelText('Gemini API 키') as HTMLInputElement).value).toBe('stored-key')
+  })
+
+  it('출제 요청 body에 apiKey 포함', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation((url) => {
+      if (String(url).includes('generate'))
+        return Promise.resolve(makeJsonResponse({ quizId: 'q1', problems: mockProblems }))
+      return Promise.resolve(makeJsonResponse({ results: mockResults, totalEarned: 30, totalPoints: 30 }))
+    })
+    const user = userEvent.setup()
+    render(<QuizPage />)
+    await user.click(screen.getByRole('radio', { name: '중2' }))
+    await user.click(screen.getByRole('radio', { name: '중' }))
+    await user.click(screen.getByRole('button', { name: '출제' }))
+    await waitFor(() => expect(screen.queryByText('국어 문제')).toBeTruthy())
+    const generateCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('generate'))
+    expect(generateCall).toBeDefined()
+    const body = JSON.parse((generateCall![1] as RequestInit).body as string)
+    expect(body.apiKey).toBe('test-key')
   })
 })

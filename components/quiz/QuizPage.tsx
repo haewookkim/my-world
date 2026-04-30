@@ -1,17 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { GradeSelector } from './GradeSelector'
 import { ProblemCard } from './ProblemCard'
 import { ResultCard } from './ResultCard'
+import { ApiKeyInput } from './ApiKeyInput'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Grade, Difficulty, Problem, SubmitResult } from '@/types/quiz'
 
 type Phase = 'select' | 'quiz' | 'result' | 'error'
 
+const API_KEY_STORAGE = 'quiz-api-key'
+
 export function QuizPage() {
   const [phase, setPhase] = useState<Phase>('select')
+  const [apiKey, setApiKey] = useState('')
   const [grade, setGrade] = useState<Grade | ''>('')
   const [difficulty, setDifficulty] = useState<Difficulty | ''>('')
   const [quizId, setQuizId] = useState('')
@@ -22,14 +26,25 @@ export function QuizPage() {
   const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    const stored = localStorage.getItem(API_KEY_STORAGE)
+    if (stored) setApiKey(stored)
+  }, [])
+
+  function handleApiKeyChange(v: string) {
+    setApiKey(v)
+    if (v) localStorage.setItem(API_KEY_STORAGE, v)
+    else localStorage.removeItem(API_KEY_STORAGE)
+  }
+
   async function generateQuiz(g: Grade | '', d: Difficulty | '') {
-    if (!g || !d) return
+    if (!g || !d || !apiKey) return
     setLoading(true)
     try {
       const res = await fetch('/api/quiz/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grade: g, difficulty: d }),
+        body: JSON.stringify({ grade: g, difficulty: d, apiKey }),
       })
       if (!res.ok) throw new Error('generate failed')
       const data = await res.json()
@@ -95,16 +110,18 @@ export function QuizPage() {
     return (
       <div className="max-w-2xl mx-auto p-6 flex flex-col gap-6">
         <h1 className="text-2xl font-bold">학년·난이도별 문제 출제</h1>
+        <ApiKeyInput value={apiKey} onChange={handleApiKeyChange} />
         <GradeSelector
           onSubmit={handleSelect}
           loading={loading}
+          submitDisabled={!apiKey}
           initialGrade={grade}
           initialDifficulty={difficulty}
         />
         {phase === 'error' && (
           <div className="flex flex-col gap-3">
             <p className="text-destructive">출제에 실패했습니다. 다시 시도해 주세요.</p>
-            <Button onClick={handleRetry} disabled={loading}>
+            <Button onClick={handleRetry} disabled={loading || !apiKey}>
               다시 시도
             </Button>
           </div>

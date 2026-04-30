@@ -12,6 +12,7 @@ const DIFFICULTIES: Difficulty[] = ['상', '중', '하']
 interface GradeSelectorProps {
   onSubmit: (grade: Grade, difficulty: Difficulty) => void
   loading?: boolean
+  submitDisabled?: boolean
   initialGrade?: Grade | ''
   initialDifficulty?: Difficulty | ''
 }
@@ -19,6 +20,7 @@ interface GradeSelectorProps {
 export function GradeSelector({
   onSubmit,
   loading,
+  submitDisabled,
   initialGrade = '',
   initialDifficulty = '',
 }: GradeSelectorProps) {
@@ -61,7 +63,7 @@ export function GradeSelector({
         onClick={() => {
           if (grade && difficulty) onSubmit(grade, difficulty)
         }}
-        disabled={!grade || !difficulty || loading}
+        disabled={!grade || !difficulty || loading || submitDisabled}
       >
         출제
       </Button>
