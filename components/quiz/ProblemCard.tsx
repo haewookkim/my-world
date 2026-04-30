@@ -50,10 +50,11 @@ export function ProblemCard({ problem, answer, onAnswerChange, disabled }: Probl
             value={answer}
             onValueChange={(v) => onAnswerChange(v)}
             aria-label="선택지"
-            spacing={2}
+            orientation="vertical"
+            className="w-full"
           >
             {choices.map((choice) => (
-              <ToggleGroupItem key={choice} value={choice} disabled={disabled}>
+              <ToggleGroupItem key={choice} value={choice} disabled={disabled} className="justify-start text-left whitespace-normal h-auto py-2">
                 {choice}
               </ToggleGroupItem>
             ))}
