@@ -11,11 +11,19 @@ const DIFFICULTIES: Difficulty[] = ['상', '중', '하']
 
 interface GradeSelectorProps {
   onSubmit: (grade: Grade, difficulty: Difficulty) => void
+  loading?: boolean
+  initialGrade?: Grade | ''
+  initialDifficulty?: Difficulty | ''
 }
 
-export function GradeSelector({ onSubmit }: GradeSelectorProps) {
-  const [grade, setGrade] = useState<Grade | ''>('')
-  const [difficulty, setDifficulty] = useState<Difficulty | ''>('')
+export function GradeSelector({
+  onSubmit,
+  loading,
+  initialGrade = '',
+  initialDifficulty = '',
+}: GradeSelectorProps) {
+  const [grade, setGrade] = useState<Grade | ''>(initialGrade)
+  const [difficulty, setDifficulty] = useState<Difficulty | ''>(initialDifficulty)
 
   return (
     <FieldGroup>
@@ -28,7 +36,7 @@ export function GradeSelector({ onSubmit }: GradeSelectorProps) {
           spacing={2}
         >
           {GRADES.map((g) => (
-            <ToggleGroupItem key={g} value={g}>
+            <ToggleGroupItem key={g} value={g} disabled={loading}>
               {g}
             </ToggleGroupItem>
           ))}
@@ -43,7 +51,7 @@ export function GradeSelector({ onSubmit }: GradeSelectorProps) {
           spacing={2}
         >
           {DIFFICULTIES.map((d) => (
-            <ToggleGroupItem key={d} value={d}>
+            <ToggleGroupItem key={d} value={d} disabled={loading}>
               {d}
             </ToggleGroupItem>
           ))}
@@ -53,7 +61,7 @@ export function GradeSelector({ onSubmit }: GradeSelectorProps) {
         onClick={() => {
           if (grade && difficulty) onSubmit(grade, difficulty)
         }}
-        disabled={!grade || !difficulty}
+        disabled={!grade || !difficulty || loading}
       >
         출제
       </Button>
