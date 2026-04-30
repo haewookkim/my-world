@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
 import type { Grade, Difficulty } from '@/types/quiz'
 
 const GRADES: Grade[] = ['중1', '중2', '중3', '고1', '고2', '고3']
@@ -112,7 +113,12 @@ export function GradeSelector({
           }}
           disabled={!grade || !difficulty || loading || submitDisabled}
         >
-          출제
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              문제 출제 중…
+            </>
+          ) : '출제'}
         </Button>
       </CardFooter>
     </Card>
